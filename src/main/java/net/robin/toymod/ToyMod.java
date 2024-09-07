@@ -5,7 +5,6 @@ import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
 import net.minecraft.text.Text;
 import net.robin.toymod.screen.VillagerInventoryScreenHandlerFactory;
 import org.slf4j.Logger;
@@ -18,17 +17,20 @@ public class ToyMod implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
-			VillagerEntity villager = (VillagerEntity) entity;  // Properly cast the entity to VillagerEntity
 
-			player.sendMessage(Text.literal("Opening villager inventory"), true);
+			// Check if the entity is a villager
+			if (entity instanceof VillagerEntity villager) {
 
-			// Access the villager's internal inventory directly
-			SimpleInventory inventory = villager.getInventory();
+				// Check if player is sneaking and not in spectator mode
+				if (player.isSneaking() && !player.isSpectator()) {
+					player.sendMessage(Text.literal("Opening villager inventory"), true);
+					SimpleInventory inventory = villager.getInventory();
+					player.openHandledScreen(new VillagerInventoryScreenHandlerFactory(inventory));
+					return ActionResult.SUCCESS;  // Block future interactions, i.e. the trade screen from popping up.
+				}
+			}
 
-			// Open the inventory for the player
-			player.openHandledScreen(new VillagerInventoryScreenHandlerFactory(inventory));
-
-			return ActionResult.SUCCESS;  // Indicate that the interaction was successful
+			return ActionResult.PASS;  // Pass the event if the conditions are not met
 		});
 	}
 }
